@@ -483,7 +483,7 @@ window.onload = () => {
 
                 // Title Text
                 ctx.fillStyle = '#FFD700'; // Gold
-                 const titleFontSize = Math.max(20, Math.min(60, rect.w * 0.1)); // Scale font size
+                 const titleFontSize = Math.max(20, Math.min(36, rect.w * 0.1)); // Scale font size
                 ctx.font = `bold ${titleFontSize}px fantasy`; // Or another suitable font
                 ctx.textAlign = 'center';
                 ctx.shadowColor = 'black';
