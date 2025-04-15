@@ -1,18 +1,63 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Crucial for responsive design -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>May Day Television Network</title>
+    <title>MAYDAY TV</title>
+    <!-- Link to your CSS file -->
     <link rel="stylesheet" href="style.css">
+    <!-- Or embed CSS here within <style> tags if you prefer -->
+    <!-- <style>
+        /* Paste your CSS rules here */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background-color: #222;
+        }
+        *, *::before, *::after {
+            box-sizing: border-box; /* IMPORTANT */
+        }
+        #tvContainer {
+            width: 95%;
+            max-width: 800px;
+            margin: 20px auto;
+            position: relative;
+        }
+        #tvCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background-color: #111;
+        }
+        #remote {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .remote-button {
+            padding: 8px 12px;
+            margin: 3px;
+            cursor: pointer;
+            background-color: #555;
+            color: white;
+            border: 1px solid #888;
+            border-radius: 4px;
+        }
+    </style> -->
 </head>
+
 <body>
-    <div class="canvas-container">
-        <canvas id="tvCanvas" width="800" height="800"></canvas>
+    <div id="tvContainer">
+        <!-- Canvas element - NO fixed width/height attributes here -->
+        <canvas id="tvCanvas"></canvas>
     </div>
 
-    <div class="remote-control" id="remote">
-        <p>Remote Control:</p>
+    <div id="remote">
+        <!-- Remote Buttons -->
         <button class="remote-button" data-channel="1">1</button>
         <button class="remote-button" data-channel="2">2</button>
         <button class="remote-button" data-channel="3">3</button>
@@ -25,6 +70,9 @@
         <button class="remote-button" data-channel="0">0</button>
     </div>
 
+    <!-- Link to your JavaScript file - place just before closing body -->
+    <!-- Ensure the ENTIRE JavaScript code block we worked on is INSIDE this file -->
     <script src="script.js"></script>
+
 </body>
 </html>
