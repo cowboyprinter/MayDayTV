@@ -30,8 +30,53 @@ window.onload = () => {
     const cloudParts = [ { dx: 0, dy: 0, r: 50 }, { dx: -40, dy: 0, r: 35 }, { dx: 40, dy: -5, r: 40 }, { dx: 10, dy: -25, r: 30 }, { dx: -20, dy: 15, r: 25 } ];
     const baseCloudWidth = Math.max(...cloudParts.map(p => p.dx + p.r)) - Math.min(...cloudParts.map(p => p.dx - p.r));
 
-    function drawCloud(ctx, cloud, baseX, baseY, color = '#FFFFFF') { /* ... keep internal logic ... */ } // No change needed here
-    function updateCloud(cloud, rectW, cloudWidthEstimate) { /* ... keep internal logic ... */ } // No change needed here
+       // --- Cloud Helper Function & Variables ---
+  // ---     const cloudParts = [ { dx: 0, dy: 0, r: 50 }, { dx: -40, dy: 0, r: 35 }, { dx: 40, dy: -5, r: 40 }, { dx: 10, dy: -25, r: 30 }, { dx: -20, dy: 15, r: 25 } ];
+  // ---     const baseCloudWidth = Math.max(...cloudParts.map(p => p.dx + p.r)) - Math.min(...cloudParts.map(p => p.dx - p.r));
+   
+       // --- Cloud Helper Function & Variables ---
+       function drawCloud(ctx, cloud, baseX, baseY, color = '#FFFFFF') {
+           // Ensure cloud and cloud.scale are valid before proceeding
+           if (!cloud || typeof cloud.scale === 'undefined') {
+                console.warn("Attempted to draw invalid cloud:", cloud);
+                return; // Don't draw if data is missing
+            }
+   
+           ctx.save();
+           ctx.fillStyle = color;
+           // Use the cloud's x, y relative to the passed baseX, baseY
+           const currentCloudX = baseX + cloud.x;
+           const currentCloudY = baseY + cloud.y;
+   
+           cloudParts.forEach(part => {
+               ctx.beginPath();
+               const centerX = currentCloudX + part.dx * cloud.scale;
+               const centerY = currentCloudY + part.dy * cloud.scale;
+               const radius = Math.max(1, part.r * cloud.scale); // Ensure radius is at least 1
+               ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+               ctx.fill();
+           });
+           ctx.restore();
+       }
+   
+       function updateCloud(cloud, rectW, cloudWidthEstimate) {
+            // Ensure cloud and cloud.scale are valid before proceeding
+            if (!cloud || typeof cloud.speed === 'undefined' || typeof cloud.scale === 'undefined') {
+                console.warn("Attempted to update invalid cloud:", cloud);
+                return; // Don't update if data is missing
+            }
+   
+           cloud.x += cloud.speed;
+           // Calculate the scaled width for wrapping logic
+           const scaledWidth = cloudWidthEstimate * cloud.scale;
+           // Check if the left edge of the cloud is past the right edge of the screen rect
+           if (cloud.x - (scaledWidth / 2) > rectW) { // Use rectW (screen width)
+               // Reset position to the left, off-screen
+               cloud.x = -scaledWidth * 1.1; // Start further off-screen left
+                // Optional: Randomize y position slightly on wrap?
+                // cloud.y = Math.random() * (screenRect.h * 0.6); // If relevant for the channel
+           }
+       }
 
     // --- Helper Functions (Update sizes to be relative) ---
 
@@ -341,35 +386,63 @@ window.onload = () => {
     // Adjust drawing parameters within each channel's draw function to use 'rect'
     const channels = [
         { // Channel 0 - Clover News
-            number: 0, name: "This is... MAYDAY NEWS NOW",
-            init: ()=>{ newsScrollX = screenRect.w + 100; }, // Init based on current screen width
-            draw: (ctx, rect)=>{
+            number: 0,
+            name: "This is... MAYDAY NEWS NOW",
+            // Add a property to store the calculated width
+            newsTextWidth: 0, // Initialize
+            init: function() { // Use 'function' keyword to ensure 'this' refers to the channel object
+                newsScrollX = screenRect.w + 100; // Reset scroll position
+
+                // Define the text WITHIN init OR ensure it's accessible here
+                const newsText = "TRUMP THREATENS WITCHES BUT MAY DAY CELEBRATIONS STILL UNDERWAY, +++ PAGANS BOAST: MORE GODS -  MORE HOLIDAYS +++ LOCAL MAYPOLE RAISING AT NOON,... OR ARE YOU JUST HAPPY TO SEE ME? +++ CLOVER REPORTS HIGH POLLEN COUNT...NO JOGGING ADVISORY TODAY - YOUR NOSE WILL BE RUNNING MORE THAN YOU +++ BELTANE BONFIRE AND OUTDOOR SEX SAFETY TIPS +++ TOP FIVE REASONS TO DATE A PAGAN GIRL: SHE WORSHIPS THE GROUND YOU WALK ON...ORIGINAL WHAT???...BEING INVITED TO CHURCH IS AWESOME...When she says THE HORNED GOD COMES! she MEANS IT!!!...THREE WORDS: beltane, Beltane, BELTANE!...JOKES STOLEN FROM ANGELFIRE.COM +++";
+
+                // Calculate font size based on CURRENT screenRect (available at init time)
+                const fontSize = Math.max(12, Math.min(24, screenRect.h * 0.05));
+                ctx.font = `bold ${fontSize}px sans-serif`; // Set font BEFORE measuring
+
+                // Calculate and store width ONCE
+                this.newsTextWidth = ctx.measureText(newsText).width;
+                console.log("Channel 0 Init: Calculated news text width:", this.newsTextWidth);
+            },
+            draw: function(ctx, rect) { // Use 'function' keyword here too
                 ctx.fillStyle = '#3d9970'; ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-                // Scale clover size and position
-                const cloverSize = rect.h * 0.2; // Relative size
-                const cloverX = rect.x + cloverSize * 3.3;
-                const cloverY = rect.y + rect.h - cloverSize * 1.4; // Adjusted Y position
+
+                const cloverSize = rect.h * 0.2;
+                const cloverX = rect.x + cloverSize * 3.3; // Use values from your latest code
+                const cloverY = rect.y + rect.h - cloverSize * 1.4;
                 drawCloverNewscaster(ctx, cloverX, cloverY, cloverSize);
 
-                const newsText = "TRUMP THREATENS WITCHES BUT MAY DAY CELEBRATIONS STILL UNDERWAY, +++ PAGANS BOAST: MORE GODS -  MORE HOLIDAYS +++ MAY DAY MIRACLE: SWEET FAMILY MOVES INTO DELICIOUS HOME +++ LOCAL MAYPOLE RAISING AT NOON,... OR ARE YOU JUST HAPPY TO SEE ME? +++ CLOVER REPORTS HIGH POLLEN COUNT...NO JOGGING ADVISORY TODAY - YOUR NOSE WILL BE RUNNING MORE THAN YOU +++ BELTANE BONFIRE AND OUTDOOR SEX SAFETY TIPS +++ TOP FIVE REASONS TO DATE A PAGAN GIRL: SHE WORSHIPS THE GROUND YOU WALK ON...ORIGINAL WHAT???...BEING INVITED TO CHURCH IS AWESOME...When she says THE HORNED GOD COMES! she MEANS IT!!!...THREE WORDS: beltane, Beltane, BELTANE!...JOKES STOLEN FROM ANGELFIRE.COM +++";
-                const tickerHeight = rect.h * 0.1; // Relative height
-                const textY = rect.y + rect.h - tickerHeight * 0.3; // Position within ticker
-                const fontSize = Math.max(12, Math.min(24, rect.h * 0.05)); // Dynamic font size
+                // Text is still needed here for drawing, but width is pre-calculated
+                 const newsText = "TRUMP THREATENS WITCHES BUT MAY DAY CELEBRATIONS STILL UNDERWAY, +++ PAGANS BOAST: MORE GODS -  MORE HOLIDAYS +++ LOCAL MAYPOLE RAISING AT NOON,... OR ARE YOU JUST HAPPY TO SEE ME? +++ CLOVER REPORTS HIGH POLLEN COUNT...NO JOGGING ADVISORY TODAY - YOUR NOSE WILL BE RUNNING MORE THAN YOU +++ BELTANE BONFIRE AND OUTDOOR SEX SAFETY TIPS +++ TOP FIVE REASONS TO DATE A PAGAN GIRL: SHE WORSHIPS THE GROUND YOU WALK ON...ORIGINAL WHAT???...BEING INVITED TO CHURCH IS AWESOME...When she says THE HORNED GOD COMES! she MEANS IT!!!...THREE WORDS: beltane, Beltane, BELTANE!...JOKES STOLEN FROM ANGELFIRE.COM +++";
+
+                const tickerHeight = rect.h * 0.1;
+                const textY = rect.y + rect.h - tickerHeight * 0.3;
+                const fontSize = Math.max(12, Math.min(24, rect.h * 0.05)); // Still need font size for drawing
+
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.fillRect(rect.x, rect.y + rect.h - tickerHeight, rect.w, tickerHeight);
                 ctx.fillStyle = '#FFFFFF';
-                ctx.font = `bold ${fontSize}px sans-serif`;
-                const textWidth = ctx.measureText(newsText).width; // Measure based on current font
+                ctx.font = `bold ${fontSize}px sans-serif`; // Set font for drawing
+
+                // Use the PRE-CALCULATED width
+                const textWidth = this.newsTextWidth || ctx.measureText(newsText).width; // Fallback just in case init didn't run
+
                 ctx.save();
                 ctx.beginPath();
                 ctx.rect(rect.x, rect.y + rect.h - tickerHeight, rect.w, tickerHeight);
                 ctx.clip();
                 ctx.fillText(newsText, rect.x + newsScrollX, textY);
                 ctx.restore();
-                newsScrollX -= Math.max(1, rect.w * 0.003); // Scale scroll speed slightly
-                if (newsScrollX < -textWidth) { newsScrollX = rect.w; }
+
+                newsScrollX -= Math.max(1, rect.w * 0.003);
+
+                // Use the pre-calculated width for wrapping logic
+                if (newsScrollX < -textWidth) {
+                    newsScrollX = rect.w;
+                }
             }
         },
+        // ... other channels ...
         { // Channel 1 - Rituals
             number: 1, name: "Ancient Rituals Today",
             init: ()=>{},
@@ -483,7 +556,9 @@ window.onload = () => {
 
                 // Title Text
                 ctx.fillStyle = '#FFD700'; // Gold
-                 const titleFontSize = Math.max(20, Math.min(34, rect.w * 0.1)); // Scale font size
+                 // --- UPDATED LINE ---
+                 const titleFontSize = Math.max(16, Math.min(36, rect.w * 0.06)); // Adjusted for target size ~32px, with scaling
+                // --- END UPDATED LINE ---
                 ctx.font = `bold ${titleFontSize}px fantasy`; // Or another suitable font
                 ctx.textAlign = 'center';
                 ctx.shadowColor = 'black';
@@ -643,44 +718,138 @@ window.onload = () => {
                 ctx.textAlign = 'left'; // Reset
             }
         },
-        { // Channel 7 - Labor Day
-            number: 7, name: "Int'l Labor Day Focus",
-            init: ()=>{},
-            draw: (ctx, rect)=>{
-                ctx.fillStyle = '#4682B4'; ctx.fillRect(rect.x, rect.y, rect.w, rect.h); // SteelBlue BG
+        { // Channel 7 - Labor Day (Earth Makeover)
+            number: 7,
+            name: "Int'l Labor Day Focus",
+            // Add a state variable for stars specific to this channel
+            stars: [],
+            init: function() { // Use function() to access 'this'
+                this.stars = []; // Clear previous stars
+                // Calculate star density based on screen area
+                const numStars = Math.max(50, Math.floor(screenRect.w * screenRect.h * 0.0002));
+                for (let i = 0; i < numStars; i++) {
+                    this.stars.push({
+                        // Store positions relative to the screenRect for simplicity
+                        x: Math.random() * screenRect.w,
+                        y: Math.random() * screenRect.h,
+                        size: Math.random() * 1.5 + 0.5 // Small random size
+                    });
+                }
+            },
+            draw: function(ctx, rect) { // Use function() to access 'this'
+                // 1. Black Space Background
+                ctx.fillStyle = '#000000'; // Black
+                ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
-                // Globe - Scale size and position
-                const globeRadius = Math.min(rect.w, rect.h) * 0.18; // Relative radius
+                // 2. Draw Static Stars
+                ctx.fillStyle = '#FFFFFF'; // White stars
+                this.stars.forEach(star => {
+                    ctx.beginPath();
+                    // Draw relative to the screen rectangle's origin
+                    ctx.arc(rect.x + star.x, rect.y + star.y, star.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // 3. Globe Calculations (same as before)
+                const globeRadius = Math.min(rect.w, rect.h) * 0.18;
                 const globeX = rect.x + rect.w / 2;
-                const globeY = rect.y + rect.h / 2 - globeRadius * 0.3; // Adjust vertical position slightly
+                const globeY = rect.y + rect.h / 2 - globeRadius * 0.3;
 
-                // Draw Globe Base (Ocean)
-                ctx.fillStyle = '#5F9EA0'; // CadetBlue
-                ctx.beginPath(); ctx.arc(globeX, globeY, globeRadius, 0, Math.PI * 2); ctx.fill();
+                // --- Start Clipping for Globe Elements ---
+                ctx.save(); // Save context state before clipping
+                ctx.beginPath();
+                ctx.arc(globeX, globeY, globeRadius, 0, Math.PI * 2);
+                ctx.clip(); // Apply clipping mask - affects subsequent draws until restore()
 
-                // Draw Continents (Simplified, relative to globe size)
-                ctx.fillStyle = '#90EE90'; // LightGreen
-                ctx.beginPath(); ctx.ellipse(globeX - globeRadius * 0.3, globeY - globeRadius * 0.2, globeRadius * 0.4, globeRadius * 0.3, Math.PI / 4, 0, Math.PI * 2); ctx.fill(); // America-ish
-                ctx.beginPath(); ctx.ellipse(globeX + globeRadius * 0.4, globeY + globeRadius * 0.3, globeRadius * 0.5, globeRadius * 0.25, -Math.PI / 6, 0, Math.PI * 2); ctx.fill(); // Eurasia/Africa-ish
+                // 4. Draw Ocean Base (inside the clip)
+                ctx.fillStyle = '#1E90FF'; // DodgerBlue (or another ocean blue like '#0077BE')
+                // Fill the clipped area (the circle)
+                ctx.fillRect(rect.x, rect.y, rect.w, rect.h); // Fill the whole rect, but only circle shows
 
-                // Pulsing Outer Ring
+                // 5. Draw Continents (Simplified, relative to globe size, inside the clip)
+                ctx.fillStyle = '#90EE90'; // LightGreen (or '#3CB371' for darker green)
+                // Original 'America-ish'
+                ctx.beginPath();
+                ctx.ellipse(globeX - globeRadius * 0.3, globeY - globeRadius * 0.2, globeRadius * 0.4, globeRadius * 0.3, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill();
+                // Original 'Eurasia/Africa-ish'
+                ctx.beginPath();
+                ctx.ellipse(globeX + globeRadius * 0.4, globeY + globeRadius * 0.3, globeRadius * 0.5, globeRadius * 0.25, -Math.PI / 6, 0, Math.PI * 2);
+                ctx.fill();
+                // Add more simplified land masses
+                // 'South America-ish'
+                 ctx.beginPath();
+                 ctx.ellipse(globeX - globeRadius * 0.1, globeY + globeRadius * 0.5, globeRadius * 0.2, globeRadius * 0.4, Math.PI / 3, 0, Math.PI * 2);
+                 ctx.fill();
+                // 'Australia-ish'
+                 ctx.beginPath();
+                 ctx.ellipse(globeX + globeRadius * 0.6, globeY + globeRadius * 0.1, globeRadius * 0.25, globeRadius * 0.15, -Math.PI / 4, 0, Math.PI * 2);
+                 ctx.fill();
+                 // Small 'Island'
+                  ctx.beginPath();
+                  ctx.arc(globeX + globeRadius * 0.1, globeY - globeRadius * 0.6, globeRadius * 0.1, 0, Math.PI*2);
+                  ctx.fill();
+
+
+                // 6. Draw Polar Caps (Gradients, inside the clip)
+                const capRadius = globeRadius * 0.4; // Size of the polar cap gradient effect
+                const capSoftness = 0.7; // How quickly the gradient fades (0=sharp, 1=soft)
+
+                // Top Cap Gradient
+                const topGrad = ctx.createRadialGradient(
+                    globeX, globeY - globeRadius, 0, // Inner circle (center of cap)
+                    globeX, globeY - globeRadius, capRadius // Outer circle (extent of gradient)
+                );
+                topGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); // White center
+                topGrad.addColorStop(capSoftness, 'rgba(255, 255, 255, 0.7)'); // Fade
+                topGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)'); // Transparent edge
+
+                ctx.fillStyle = topGrad;
+                ctx.fillRect(globeX - capRadius, globeY - globeRadius, capRadius * 2, capRadius * 2); // Fill area
+
+                // Bottom Cap Gradient
+                const bottomGrad = ctx.createRadialGradient(
+                    globeX, globeY + globeRadius, 0, // Inner circle
+                    globeX, globeY + globeRadius, capRadius // Outer circle
+                );
+                bottomGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); // White center
+                bottomGrad.addColorStop(capSoftness, 'rgba(255, 255, 255, 0.7)'); // Fade
+                bottomGrad.addColorStop(1, 'rgba(255, 255, 255, 0.0)'); // Transparent edge
+
+                ctx.fillStyle = bottomGrad;
+                ctx.fillRect(globeX - capRadius, globeY, capRadius * 2, capRadius * 2); // Fill area covering bottom
+
+                // --- End Clipping ---
+                ctx.restore(); // Restore context state (removes clipping mask)
+
+
+                // 7. Pulsing Outer Ring (Drawn *after* clipping is removed)
                 const pulseFactor = (Math.sin(frameCount * 0.05) + 1) / 2; // 0 to 1
-                const pulseRadius = globeRadius + globeRadius * 0.1 + pulseFactor * (globeRadius * 0.15); // Scale pulse range
-                ctx.strokeStyle = `rgba(255, 255, 255, ${pulseFactor * 0.8})`; // Fade opacity with pulse
-                ctx.lineWidth = Math.max(1, globeRadius * 0.05) + pulseFactor * Math.max(1, globeRadius * 0.05); // Scale line width and pulse thickness
-                ctx.beginPath(); ctx.arc(globeX, globeY, pulseRadius, 0, Math.PI * 2); ctx.stroke();
+                const pulseRadius = globeRadius + globeRadius * 0.1 + pulseFactor * (globeRadius * 0.15);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${pulseFactor * 0.8})`;
+                ctx.lineWidth = Math.max(1, globeRadius * 0.05) + pulseFactor * Math.max(1, globeRadius * 0.05);
+                ctx.beginPath();
+                ctx.arc(globeX, globeY, pulseRadius, 0, Math.PI * 2);
+                ctx.stroke();
                 ctx.lineWidth = 1; // Reset
 
-                // Text - Scale font size and position
+
+                // 8. Text (same as before, drawn on top)
                 ctx.fillStyle = '#FFFFFF';
-                const titleFontSize = Math.max(14, Math.min(26, rect.h * 0.07)); // Scale title font
-                const subFontSize = Math.max(10, Math.min(20, rect.h * 0.05)); // Scale subtitle font
+                const titleFontSize = Math.max(14, Math.min(26, rect.h * 0.07));
+                const subFontSize = Math.max(10, Math.min(20, rect.h * 0.05));
                 ctx.font = `bold ${titleFontSize}px sans-serif`;
                 ctx.textAlign = 'center';
-                ctx.fillText("International Workers' Day", rect.x + rect.w / 2, rect.y + rect.h * 0.15); // Position relative top
+                // Add slight shadow to text for better readability on busy background
+                ctx.shadowColor = 'black';
+                ctx.shadowBlur = 4;
+                ctx.fillText("International Workers' Day", rect.x + rect.w / 2, rect.y + rect.h * 0.15);
                 ctx.font = `${subFontSize}px sans-serif`;
-                ctx.fillText("A Global Perspective on Labor Rights", rect.x + rect.w / 2, rect.y + rect.h * 0.85); // Position relative bottom
-                ctx.textAlign = 'left'; // Reset
+                ctx.fillText("A Global Perspective on Labor Rights", rect.x + rect.w / 2, rect.y + rect.h * 0.85);
+                // Reset shadow and alignment
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.textAlign = 'left';
             }
         },
         { // Channel 8 - Weather
